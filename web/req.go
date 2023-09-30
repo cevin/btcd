@@ -16,21 +16,20 @@ type parseTransactionReq struct {
 	Tx string `json:"tx" form:"tx" query:"tx"`
 }
 
-type createTransactionReq struct {
-	TxIn         []txin         `json:"txin"`
-	PayToAddress []payToAddress `json:"pay_to_address"`
+type createAndSignTransactionReq struct {
+	Raw            string         `json:"raw"`
+	TxIn           []txin         `json:"txin"`
+	PayToAddresses []payToAddress `json:"pay_to_addresses"`
 }
 type txin struct {
-	TxId string `json:"txid"`
-	VOut int    `json:"vout,omitempty,-"`
+	TxId         string  `json:"txid"`
+	VOut         *int    `json:"vout,omitempty,-"`
+	WIF          string  `json:"wif,omitempty,-"`
+	RedeemScript string  `json:"redeem-script,omitempty,-"`
+	SegWit       bool    `json:"segwit,omitempty,-"`
+	Amount       float64 `json:"amount,omitempty,-"`
 }
 type payToAddress struct {
 	Address string  `json:"address"`
 	Amount  float64 `json:"amount"`
-}
-
-type signTransactionReq struct {
-	Tx           string `json:"tx" form:"tx" query:"tx"`
-	Wif          string `json:"wif" form:"wif" query:"wif"`
-	RedeemScript string `json:"redeem-script" form:"redeem-script" query:"redeem-script"`
 }

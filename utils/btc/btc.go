@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -17,48 +16,6 @@ import (
 
 var mnet = &chaincfg.MainNetParams
 
-type Address struct {
-	Address       string
-	PrivateKey    *btcec.PrivateKey
-	PublicKey     *btcec.PublicKey
-	AddressPubKey *btcutil.AddressPubKey
-	WIF           string
-}
-
-type MultiSigAddress struct {
-	Asm       string   `json:"asm,omitempty,-"`
-	Type      string   `json:"type,omitempty,-"`
-	ReqSigs   int32    `json:"reqSigs,omitempty,-"`
-	Address   string   `json:"address,omitempty,-"`
-	Addresses []string `json:"addresses,omitempty,-"`
-	Script    string   `json:"script,omitempty,-"`
-}
-
-type Transaction struct {
-	Txid     string         `json:"txid"`
-	Hash     string         `json:"hash"`
-	Size     int            `json:"size"`
-	VSize    int64          `json:"vsize"`
-	Weight   int            `json:"weight"`
-	Version  int32          `json:"version"`
-	LockTime uint32         `json:"locktime"`
-	Vins     []btcjson.Vin  `json:"vin"`
-	Vouts    []btcjson.Vout `json:"vout"`
-}
-
-type Input struct {
-	TxId string
-	VOut int
-}
-
-type Output struct {
-	PayToAddress string
-	Amount       float64
-}
-
-type Inputs []Input
-type Outputs []Output
-
 // NewPrivateKey generate a Bitcoin wallet private key
 func NewPrivateKey() *btcec.PrivateKey {
 	key, _ := btcec.NewPrivateKey()
@@ -69,17 +26,11 @@ func NewPrivateKey() *btcec.PrivateKey {
 // NewAddress generate a normal wallet
 func NewAddress() Address {
 	privateKey := NewPrivateKey()
-	wif, _ := btcutil.NewWIF(privateKey, &chaincfg.MainNetParams, true)
+	wif, _ := btcutil.NewWIF(privateKey, mnet, true)
 
-	addressPubKey, _ := btcutil.NewAddressPubKey(privateKey.PubKey().SerializeCompressed(), mnet)
+	addr, _ := ParseWIF(wif.String())
 
-	return Address{
-		Address:       addressPubKey.EncodeAddress(),
-		PrivateKey:    privateKey,
-		PublicKey:     privateKey.PubKey(),
-		WIF:           wif.String(),
-		AddressPubKey: addressPubKey,
-	}
+	return *addr
 
 }
 
@@ -89,17 +40,30 @@ func ParseWIF(key string) (*Address, error) {
 		return nil, err
 	}
 
-	addressPubKey, err := btcutil.NewAddressPubKey(wif.PrivKey.PubKey().SerializeCompressed(), mnet)
+	compressedPubKey := wif.PrivKey.PubKey().SerializeCompressed()
+	addressPubKey, err := btcutil.NewAddressPubKey(compressedPubKey, mnet)
 	if err != nil {
 		return nil, err
 	}
 
+	// get p2pkhPkScript
+	addressPubKeyHash, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(compressedPubKey), mnet)
+	p2pkhPkScript, _ := txscript.PayToAddrScript(addressPubKeyHash)
+	// get witnessPkScript
+	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(compressedPubKey), mnet)
+	witnessPkScript, _ := txscript.PayToAddrScript(addressWitnessPubKeyHash)
+
 	return &Address{
 		Address:       addressPubKey.EncodeAddress(),
+		Bech32Address: addressWitnessPubKeyHash.EncodeAddress(),
 		PrivateKey:    wif.PrivKey,
 		PublicKey:     wif.PrivKey.PubKey(),
 		WIF:           wif.String(),
+
 		AddressPubKey: addressPubKey,
+
+		p2pkhPkScript:   p2pkhPkScript,
+		witnessPkScript: witnessPkScript,
 	}, nil
 }
 
@@ -114,8 +78,17 @@ func ParsePublicKeyHex(key string) (*Address, error) {
 		return nil, err
 	}
 
+	pubKey, err := btcec.ParsePubKey(decodeString)
+	if err != nil {
+		return nil, err
+	}
+
+	witnessProg := btcutil.Hash160(pubKey.SerializeCompressed())
+	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(witnessProg, mnet)
+
 	return &Address{
 		Address:       addressPubKey.EncodeAddress(),
+		Bech32Address: addressWitnessPubKeyHash.EncodeAddress(),
 		PublicKey:     addressPubKey.PubKey(),
 		AddressPubKey: addressPubKey,
 	}, nil
@@ -140,6 +113,7 @@ func NewMultiSigAddress(pubKeys []string, required int) (*MultiSigAddress, error
 	if err != nil {
 		return nil, err
 	}
+
 	addressHash, err := btcutil.NewAddressScriptHashFromHash(btcutil.Hash160(script), mnet)
 	if err != nil {
 		return nil, err
@@ -202,7 +176,6 @@ func ParseRawTransaction(str string) (*Transaction, error) {
 
 	tx := Transaction{
 		Txid:     mtx.TxHash().String(),
-		Hash:     mtx.TxHash().String(),
 		Size:     mtx.SerializeSize(),
 		VSize:    mempool.GetTxVirtualSize(btcutil.NewTx(&mtx)),
 		Version:  mtx.Version,
@@ -214,14 +187,15 @@ func ParseRawTransaction(str string) (*Transaction, error) {
 	return &tx, nil
 }
 
-func CreateRawTransaction(inputs Inputs, outputs Outputs) (string, error) {
+func CreateRawTransaction(inputs Inputs, outputs Outputs) (*wire.MsgTx, error) {
 
-	tx := wire.NewMsgTx(wire.TxVersion)
+	// wire.TxVersion
+	tx := wire.NewMsgTx(2)
 
 	for _, input := range inputs {
 		txHash, err := chainhash.NewHashFromStr(input.TxId)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		prevOut := wire.NewOutPoint(txHash, uint32(input.VOut))
@@ -233,70 +207,39 @@ func CreateRawTransaction(inputs Inputs, outputs Outputs) (string, error) {
 
 		sendAmount, err := btcutil.NewAmount(output.Amount)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		address, err := btcutil.DecodeAddress(output.PayToAddress, mnet)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		pkScript, err := txscript.PayToAddrScript(address)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		out := wire.NewTxOut(int64(sendAmount), pkScript)
 		tx.AddTxOut(out)
 	}
 
-	return serializeTx(tx)
+	return tx, nil
 
 }
 
-func SignRawTransaction(script string, key string, redeemScript string) (string, error) {
-
-	b, err := hex.DecodeString(script)
-	if err != nil {
-		return "", nil
-	}
-
-	wif, err := btcutil.DecodeWIF(key)
+func CreateRawStringTransaction(inputs Inputs, outputs Outputs) (string, error) {
+	transaction, err := CreateRawTransaction(inputs, outputs)
 	if err != nil {
 		return "", err
 	}
 
-	var pkScript, scriptPkScript []byte
-	if redeemScript == "" {
-		// qus
-		address, err := btcutil.NewAddressPubKeyHash(
-			btcutil.Hash160(wif.PrivKey.PubKey().SerializeCompressed()),
-			mnet,
-		)
-		if err != nil {
-			return "", fmt.Errorf("parseing address pubkey error, %s", err)
-		}
-		scriptPkScript, err = txscript.PayToAddrScript(address)
-		if err != nil {
-			return "", err
-		}
-		pkScript = nil
-	} else {
-		pkScript, err = hex.DecodeString(redeemScript)
-		if err != nil {
-			return "", err
-		}
-		ok, _ := txscript.IsMultisigScript(pkScript)
-		if !ok {
-			return "", fmt.Errorf("invalid redeem script")
-		}
-		scriptAddr, err := btcutil.NewAddressScriptHash(pkScript, mnet)
-		if err != nil {
-			return "", err
-		}
-		scriptPkScript, err = txscript.PayToAddrScript(scriptAddr)
-		if err != nil {
-			return "", err
-		}
+	return serializeTx(transaction)
+}
+
+func SignRawStringTransaction(script string, inputs Inputs) (string, error) {
+	b, err := hex.DecodeString(script)
+	if err != nil {
+		return "", nil
 	}
 
 	rawTx, err := btcutil.NewTxFromBytes(b)
@@ -306,26 +249,167 @@ func SignRawTransaction(script string, key string, redeemScript string) (string,
 
 	tx := rawTx.MsgTx()
 
-	for i := 0; i < len(tx.TxIn); i++ {
-		var signScript []byte
-		signScript, err = txscript.SignTxOutput(
-			mnet,
-			tx,
-			i,
-			scriptPkScript,
-			txscript.SigHashAll,
-			newLookupKeyFunc(wif.PrivKey, mnet),
-			newScriptDbFunc(pkScript),
-			tx.TxIn[i].SignatureScript,
-		)
+	return SignRawTxTransaction(tx, inputs)
+}
+
+func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
+
+	errTmpl := "invalid input:[%d] : %s"
+
+	hasSegWit := false
+	hasZeroAmount := false
+
+	prevOutFetcherMaps := make(map[wire.OutPoint]*wire.TxOut)
+	prevOutFetcher := txscript.NewMultiPrevOutFetcher(prevOutFetcherMaps)
+
+	signUseInputsMap := make(map[string]signInput)
+	for idx, input := range inputs {
+		addr, err := ParseWIF(input.WIF)
 		if err != nil {
-			return "", nil
+			return "", fmt.Errorf(errTmpl, idx, err)
 		}
 
-		tx.TxIn[i].SignatureScript = signScript
+		if input.Amount == 0 {
+			hasZeroAmount = true
+		}
+
+		if input.SegWit {
+			if input.RedeemScript != "" {
+				return "", fmt.Errorf(errTmpl, idx, "SegWit and RedeemScript cannot be set at the same time")
+			}
+			hasSegWit = true
+		}
+
+		if hasZeroAmount && hasSegWit {
+			return "", fmt.Errorf("a segwit transaction was detected, but some inputs amount is zero")
+		}
+
+		signUseInputsMap[fmt.Sprintf("%s:%d", input.TxId, input.VOut)] = signInput{
+			input: input,
+			addr:  addr,
+		}
 	}
 
-	signedTx, _ := serializeTx(tx)
+	if hasSegWit && len(signUseInputsMap) != len(tx.TxIn) {
+		return "", fmt.Errorf("SegWit transaction was detected, but the number of UTXOs from the source transaction does not match the number of signed messages entered")
+	}
 
-	return signedTx, nil
+	// calcTxSignHashes
+	matched := 0
+	var signHashes *txscript.TxSigHashes
+	for idx, input := range tx.TxIn {
+		txId := input.PreviousOutPoint.String()
+		signUseInput, ok := signUseInputsMap[txId]
+		if !ok {
+			if hasSegWit {
+				return "", fmt.Errorf("SegWit transaction was detected and %s private key is required", txId)
+			}
+			continue
+		}
+
+		matched++
+
+		var pkScript []byte
+
+		if signUseInput.input.SegWit {
+			pkScript = signUseInput.addr.witnessPkScript
+		} else {
+			if signUseInput.input.RedeemScript != "" {
+				decodeString, err := hex.DecodeString(signUseInput.input.RedeemScript)
+				if err != nil {
+					return "", fmt.Errorf(errTmpl, idx, err)
+				}
+				isMultiSignRedeemScript, _ := txscript.IsMultisigScript(decodeString)
+				if !isMultiSignRedeemScript {
+					return "", fmt.Errorf(errTmpl, idx, "invalid MultiSign redeem-script")
+				}
+				multiSignAddressPubKeyHash, err := btcutil.NewAddressScriptHash(decodeString, mnet)
+				if err != nil {
+					return "", fmt.Errorf(errTmpl, idx, err)
+				}
+				pkScript, _ = txscript.PayToAddrScript(multiSignAddressPubKeyHash)
+				signUseInput.redeemScript = decodeString
+			} else {
+				pkScript = signUseInput.addr.p2pkhPkScript
+			}
+		}
+
+		if pkScript == nil {
+			return "", fmt.Errorf("calc pkScript failed for %s", txId)
+		}
+
+		amount, err := btcutil.NewAmount(signUseInput.input.Amount)
+		if err != nil {
+			return "", fmt.Errorf(errTmpl, idx, "invalid amount, "+err.Error())
+		}
+
+		prevOutFetcher.AddPrevOut(
+			input.PreviousOutPoint,
+			wire.NewTxOut(int64(amount), pkScript),
+		)
+	}
+
+	if matched == 0 {
+		return "", fmt.Errorf("no any input matched, the transaction was not signed")
+	}
+
+	if hasSegWit {
+		signHashes = txscript.NewTxSigHashes(tx, prevOutFetcher)
+	}
+
+	for idx, input := range tx.TxIn {
+		txId := input.PreviousOutPoint.String()
+		signUseInput, ok := signUseInputsMap[txId]
+		if !ok {
+			continue
+		}
+
+		output := prevOutFetcher.FetchPrevOutput(input.PreviousOutPoint)
+
+		errPrefix := fmt.Sprintf("invalid input[%d] %s : ", idx, txId)
+
+		if !signUseInput.input.SegWit {
+
+			pkScript := signUseInput.addr.p2pkhPkScript
+
+			var redeemScript []byte
+			if signUseInput.input.RedeemScript != "" {
+				redeemScript = signUseInput.redeemScript
+			}
+
+			signScript, err := txscript.SignTxOutput(
+				mnet,
+				tx,
+				idx,
+				pkScript,
+				txscript.SigHashAll,
+				newLookupKeyFunc(signUseInput.addr.PrivateKey, mnet),
+				newScriptDbFunc(redeemScript),
+				tx.TxIn[idx].SignatureScript,
+			)
+			if err != nil {
+				return "", fmt.Errorf("%s sign error : %s", errPrefix, err)
+			}
+
+			tx.TxIn[idx].SignatureScript = signScript
+		} else {
+			signHash, err := txscript.WitnessSignature(
+				tx,
+				signHashes,
+				idx,
+				output.Value,
+				output.PkScript,
+				txscript.SigHashAll,
+				signUseInput.addr.PrivateKey,
+				true,
+			)
+			if err != nil {
+				return "", fmt.Errorf("%s sign error : %s", errPrefix, err)
+			}
+			tx.TxIn[idx].Witness = signHash
+		}
+
+	}
+
+	return serializeTx(tx)
 }

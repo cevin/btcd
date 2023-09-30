@@ -12,11 +12,12 @@ func NewAddress(c echo.Context) error {
 	addr := btc.NewAddress()
 
 	return c.JSON(200, newAddressOutput{
-		Code:       200,
-		Address:    addr.Address,
-		WIF:        addr.WIF,
-		PrivateKey: hex.EncodeToString(addr.PrivateKey.Serialize()),
-		PublicKey:  hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
+		Code:          200,
+		Address:       addr.Address,
+		Bech32Address: addr.Bech32Address,
+		WIF:           addr.WIF,
+		PrivateKey:    hex.EncodeToString(addr.PrivateKey.Serialize()),
+		PublicKey:     hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
 	})
 }
 
@@ -72,11 +73,12 @@ func ParseAddress(c echo.Context) error {
 			return c.JSON(400, errOutput{400, err.Error()})
 		} else {
 			return c.JSON(200, newAddressOutput{
-				Code:       200,
-				Address:    addr.Address,
-				WIF:        addr.WIF,
-				PrivateKey: hex.EncodeToString(addr.PrivateKey.Serialize()),
-				PublicKey:  hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
+				Code:          200,
+				Address:       addr.Address,
+				Bech32Address: addr.Bech32Address,
+				WIF:           addr.WIF,
+				PrivateKey:    hex.EncodeToString(addr.PrivateKey.Serialize()),
+				PublicKey:     hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
 			})
 		}
 	} else if req.PublicKeyHex != "" {
@@ -84,9 +86,10 @@ func ParseAddress(c echo.Context) error {
 			return c.JSON(400, errOutput{400, err.Error()})
 		} else {
 			return c.JSON(200, newAddressOutput{
-				Code:      200,
-				Address:   addr.Address,
-				PublicKey: hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
+				Code:          200,
+				Address:       addr.Address,
+				Bech32Address: addr.Bech32Address,
+				PublicKey:     hex.EncodeToString(addr.PublicKey.SerializeCompressed()),
 			})
 		}
 	} else if req.Script != "" {

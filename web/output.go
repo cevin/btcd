@@ -8,16 +8,17 @@ type errOutput struct {
 }
 
 type newAddressOutput struct {
-	Code       int      `json:"code"`
-	Address    string   `json:"address,omitempty,-"`
-	WIF        string   `json:"wif,omitempty,-"`
-	PrivateKey string   `json:"private_key_hex,omitempty,-"`
-	PublicKey  string   `json:"public_key_hex,omitempty,-"`
-	Script     string   `json:"script,omitempty,-"`
-	Asm        string   `json:"asm,omitempty,-"`
-	Type       string   `json:"type,omitempty,-"`
-	ReqSigs    uint32   `json:"reqSigs,omitempty,-"`
-	Addresses  []string `json:"addresses,omitempty,-"`
+	Code          int      `json:"code"`
+	Address       string   `json:"address,omitempty,-"`
+	Bech32Address string   `json:"bech32_address,omitempty,-"`
+	WIF           string   `json:"wif,omitempty,-"`
+	PrivateKey    string   `json:"private_key_hex,omitempty,-"`
+	PublicKey     string   `json:"public_key_hex,omitempty,-"`
+	Script        string   `json:"script,omitempty,-"`
+	Asm           string   `json:"asm,omitempty,-"`
+	Type          string   `json:"type,omitempty,-"`
+	ReqSigs       uint32   `json:"reqSigs,omitempty,-"`
+	Addresses     []string `json:"addresses,omitempty,-"`
 }
 
 type decodeTransactionOutput struct {

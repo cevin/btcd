@@ -1,24 +1,26 @@
-English | [简体中文](https://github.com/cevin/btcd/blob/main/README_zh.md)
+[English](https://github.com/cevin/btcd/blob/main/README.md) | 简体中文
 
-# Offline Bitcoin transaction processor
+# 比特币离线交易处理
 
-Simple self-hosted Bitcoin payment support
+简单的自托管比特币离线交易、支付工具
 
-# Usage
+包含生成地址（含MultiSig、Bech32）、解析WIF、生成离线交易、签名离线交易（含Bech32地址的交易和MultiSig钱包交易）
 
-## Start
+# 使用说明
+
+## 启动程序
 
 `./btcd -addr localhost:8000`
 
-## Address
+## 地址
 
-### Create Address
+### 生成地址
 
-#### Usual address
+#### 普通地址（旧地址）
 
 `GET /address/new` `POST /address/new`
 
-Response
+正确响应
 
 ```json
 {
@@ -31,7 +33,7 @@ Response
 }
 ```
 
-#### MultiSig address
+#### 多重签名地址
 
 ```text
 GET /address/new-multi-sig?public_key_hexes=031af2a6177e1179cd119657112aab53725155ee305a4199a722c8b3097782d21a,02623db1f69a896b1f6bf54ab786773ce5f9385b58eb8eed58696fc7a4111d22d6,023b95f449bbe5b01e9f791a19266cc9f94d98e09488bde3afa4a75f823efd751f&required=2
@@ -47,7 +49,7 @@ POST /address/new-multi-sig
 }
 ```
 
-Response
+正确响应
 
 ```json
 {
@@ -66,9 +68,9 @@ Response
 ```
 
 
-#### Parse Address
+#### 解析地址
 
-##### Compressed Hex Public Key
+##### 压缩后的公钥（hex格式编码）
 
 `GET /address/parse?public_key_hex=023b95f449bbe5b01e9f791a19266cc9f94d98e09488bde3afa4a75f823efd751f`
 
@@ -81,7 +83,7 @@ POST /address/parse
 # form
 public_key_hex=023b95f449bbe5b01e9f791a19266cc9f94d98e09488bde3afa4a75f823efd751f
 ```
-Response
+正确响应
 
 ```json
 {
@@ -91,7 +93,7 @@ Response
 }
 ```
 
-##### WIF
+##### 解析WIF私钥
 
 `GET /address/parse?wif=L4G8o9MCkkQnL48yw1GnkQ6SzDZeDVn3GennEHHVqB4aqWjtBymJ`
 
@@ -105,7 +107,7 @@ POST /address/parse
 wif=L4G8o9MCkkQnL48yw1GnkQ6SzDZeDVn3GennEHHVqB4aqWjtBymJ
 ```
 
-Response
+正确响应
 
 ```json
 {
@@ -118,7 +120,7 @@ Response
 }
 ```
 
-##### Script (MultiSig)
+##### 多重签名地址的兑付脚本（hex编码）
 
 ```text
 GET /address/parse?script=5221023b95f449bbe5b01e9f791a19266cc9f94d98e09488bde3afa4a75f823efd751f2102623db1f69a896b1f6bf54ab786773ce5f9385b58eb8eed58696fc7a4111d22d621031af2a6177e1179cd119657112aab53725155ee305a4199a722c8b3097782d21a53ae
@@ -136,7 +138,7 @@ POST /address/parse
 script=5221023b95f449bbe5b01e9f791a19266cc9f94d98e09488bde3afa4a75f823efd751f2102623db1f69a896b1f6bf54ab786773ce5f9385b58eb8eed58696fc7a4111d22d621031af2a6177e1179cd119657112aab53725155ee305a4199a722c8b3097782d21a53ae
 ```
 
-Response
+正确响应
 
 ```json
 {
@@ -154,9 +156,9 @@ Response
 }
 ```
 
-## Transaction
+## 交易
 
-### Decode raw transaction
+### 解析一个16进制编码的交易
 
 `GET /transaction/decode?tx=0100000001fe75a438b72fdc302b80cc216d66d5e3bbb0359bce3bb4cecf743f5fda1f4eb101000000fdfd000048304502210096b617a5b2bd676ee8d3f8d8d91bf60c599e16382d1e12a61a1f9562c35b2cb102204379706a55c07bb45d20336159f80ebe9786938e34b9309e49ed422e6d2a44470147304402201550a8bb0c28107098289fe6fe64488bdee46800d28bfbb0b0a1e1b2d64b9fb4022004684015095b999185b3da1a23d239452ad73b199a032f71978760f8ae42313f014c6952210265e6f7fb614a369c9230912a3bb09c33c5c5be2e1bcfc2293ecaed46708e0b5c2103f546edf7b434b50aa0115c1c82a0f9a96505d9eff55d2fe3b848c4b51c06b6432102908375f301c7ea583f7e113939eab1164abda4ac27898b1cf78abf1c82f02da953aeffffffff01f8a70000000000001976a914bd63bf79e39f4cd52361c092c3fba9264662285688ac00000000`
 
@@ -172,7 +174,7 @@ POST /transaction/decode
 tx=0100000001fe75a438b72fdc302b80cc216d66d5e3bbb0359bce3bb4cecf743f5fda1f4eb101000000fdfd000048304502210096b617a5b2bd676ee8d3f8d8d91bf60c599e16382d1e12a61a1f9562c35b2cb102204379706a55c07bb45d20336159f80ebe9786938e34b9309e49ed422e6d2a44470147304402201550a8bb0c28107098289fe6fe64488bdee46800d28bfbb0b0a1e1b2d64b9fb4022004684015095b999185b3da1a23d239452ad73b199a032f71978760f8ae42313f014c6952210265e6f7fb614a369c9230912a3bb09c33c5c5be2e1bcfc2293ecaed46708e0b5c2103f546edf7b434b50aa0115c1c82a0f9a96505d9eff55d2fe3b848c4b51c06b6432102908375f301c7ea583f7e113939eab1164abda4ac27898b1cf78abf1c82f02da953aeffffffff01f8a70000000000001976a914bd63bf79e39f4cd52361c092c3fba9264662285688ac00000000
 ```
 
-Response
+正确响应
 
 ```json
 {
@@ -214,13 +216,17 @@ Response
 }
 ```
 
-### Create raw transaction
+### 生成一个离线交易
 
-> Get unspent txs can use https://blockchain.info/unspent?active=$address
+> 可以使用在线公开服务来获取指定地址的未使用Input, 如 https://blockchain.info/unspent?active=钱包地址
 
-> total unspent - total send = transaction fee
+> 所有Input累计未使用金额 减去 将要发送的累计金额 等于 全网交易（确认）手续费
+>
+> 假设要发送部分金额，需要把自己的地址也作为发送目标，接收找零金额
 > 
-> Or you can send the excess to your own bitcoin address and the rest as a transaction fee
+> 如：地址A有1BTC，想发送0.1给地址B，想要支付0.0000001BTC作为交易手续费，则pay_to_addresses可能为:
+> 
+> [{"address":地址B, "amount":0.1}, {"address":地址A, "amount":0.8999999]
 
 ```text
 POST /transaction/create
@@ -229,61 +235,62 @@ POST /transaction/create
 {
     "txin": [
         {
-            "txid": "transaction hash id",
-            "vout": int, # input vout
+            "txid": "未使用的交易ID",
+            "vout": 整数, # input的vout值
         }
     ],
     "pay_to_addresses": [
         {
-            "address": "any bitcoin address",
-            "amount": float
+            "address": "任意正确的比特币地址",
+            "amount": float，最大支持精确到小数点后8位
         }
     ]
 }
 ```
 
-Response
+正确响应
 
 ```json
 {
   "code": 200,
-  "raw": "unsigned hex-encoded raw transaction"
+  "raw": "未签名的hex编码的交易"
 }
 ```
 
-### Sign raw transaction
+### 对一个交易进行签名
 
-MultiSig transactions require multiple times signature with multiple private keys.
+来自 MultiSig 多重签名地址的交易，可能需要使用兑付脚本（redeem script）和对应的私钥多次签名
 
-As long as a SegWIt transaction is included in the Inputs, then all Inputs must include the corresponding income amount of the Input.
+所有的Input中，有任意一个Input是SegWit交易的，所有Input都必须包含Input对应的收入金额
 
 ```text
 POST /transaction/sign
 
 # json
 {
-    "raw": "unsigned hex-encoded raw transaction",
+    "raw": "未签名的hex编码的交易",
     "txin": [
         {
-            "txid": "transaction hash id",
-            "wif": "WIF private key",
-            "redeem-script": "multisig redeem script",
-            "segwit": bool
+            "txid": "未使用的交易ID",
+            "wif": "WIF格式的私钥",
+            "redeem-script": "多重签名地址的兑付脚本（redeem script）16进制编码",
+            "segwit": bool 是否来自bech32格式的地址的交易
+            "amount": float64 (可选 segwit 时必须)
         }
     ]
 }
 ```
 
-Response
+正确响应
 
 ```json
 {
     "code": 200,
-    "raw": "signed hex-encoded raw transaction"
+    "raw": "签名后的交易16进制编码"
 }
 ```
 
-### Create and signing transaction
+### 创建并签名一个交易
 
 `POST /transaction/create-and-sign`
 
@@ -291,36 +298,37 @@ Response
 {
     "txin": [
         {
-            "txid": "transaction hash id",
+            "txid": "未使用的交易ID",
             "vout": int, # input vout
-            "wif": "WIF private key",
-            "redeem-script": "multisig redeem script",
-            "segwit": bool
-            "amount": float64 (optional)
+            "wif": "WIF格式的私钥",
+            "redeem-script": "多重签名地址的兑付脚本（redeem script）16进制编码",
+            "segwit": bool 是否来自bech32格式的地址的交易
         }
     ],
     "pay_to_addresses": [
         {
-            "address": "any Bitcoin address",
-            "amount": float
+            "address": "任意正确的比特币地址",
+            "amount": float，最大支持精确到小数点后8位
         }
     ]
 }
 ```
 
-Response
+正确响应
 
 ```json
 {
   "code": 200,
-  "raw": "signed hex-encoded raw transaction" 
+  "raw": "签名后的交易16进制编码" 
 }
 ```
 
 
-## Broadcast transaction
+## 广播交易
 
-Transactions that have been signed can be broadcast to the Bitcoin network through an online broadcast service.
+签名后的交易需要广播到比特币网络中，被其他节点确认后才能生效
+
+可以使用在线服务或您自己的钱包工具进行广播，在线服务如下：
 
 https://coinb.in/#broadcast
 
@@ -329,6 +337,8 @@ https://explorer.btc.com/tools/tx/publish
 
 ---
 
-Donate
+捐助
 
-Bitcoin: 1DMHiyzcjNzuYhWCbB4tx3wKfcvid1qgC4
+比特币地址: 1DMHiyzcjNzuYhWCbB4tx3wKfcvid1qgC4
+
+![wxp___f2f06nUUOuf340I1qnfmHgzyZJjKBnfrMyncNWZXxKBtkD8.png](https://s2.loli.net/2023/10/01/9uEwOAx3XGa2vjk.png)
