@@ -268,7 +268,8 @@ POST /transaction/sign
             "txid": "transaction hash id",
             "wif": "WIF private key",
             "redeem-script": "multisig redeem script",
-            "segwit": bool
+            "segwit": bool,
+            "amount": float64 (optional, when segwit transaction required)
         }
     ]
 }
@@ -295,8 +296,8 @@ Response
             "vout": int, # input vout
             "wif": "WIF private key",
             "redeem-script": "multisig redeem script",
-            "segwit": bool
-            "amount": float64 (optional)
+            "segwit": bool,
+            "amount": float64 (optional, when segwit transaction required)
         }
     ],
     "pay_to_addresses": [

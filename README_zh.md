@@ -302,7 +302,8 @@ POST /transaction/sign
             "vout": int, # input vout
             "wif": "WIF格式的私钥",
             "redeem-script": "多重签名地址的兑付脚本（redeem script）16进制编码",
-            "segwit": bool 是否来自bech32格式的地址的交易
+            "segwit": bool 是否来自bech32格式的地址的交易,
+            "amount": float64 (可选 segwit 时必须)
         }
     ],
     "pay_to_addresses": [
