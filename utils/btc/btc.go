@@ -343,6 +343,7 @@ func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
 			return "", fmt.Errorf(errTmpl, idx, "invalid amount, "+err.Error())
 		}
 
+		signUseInputsMap[txId] = signUseInput
 		prevOutFetcher.AddPrevOut(
 			input.PreviousOutPoint,
 			wire.NewTxOut(int64(amount), pkScript),
@@ -370,7 +371,7 @@ func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
 
 		if !signUseInput.input.SegWit {
 
-			pkScript := signUseInput.addr.p2pkhPkScript
+			pkScript := output.PkScript
 
 			var redeemScript []byte
 			if signUseInput.input.RedeemScript != "" {
