@@ -5,6 +5,12 @@ import (
 	"flag"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"runtime"
+)
+
+var (
+	version       string
+	gitCommitHash string
 )
 
 func main() {
@@ -20,6 +26,21 @@ func main() {
 	app.HideBanner = true
 
 	app.RouteNotFound("/*", web.DefaultNotFound)
+
+	// info
+	app.Any("/", func(c echo.Context) error {
+		return c.JSON(200, struct {
+			Code      int    `json:"code"`
+			Version   string `json:"version"`
+			GoVersion string `json:"go-version"`
+			GitHash   string `json:"git-commit-hash"`
+		}{
+			Code:      200,
+			Version:   version,
+			GoVersion: runtime.Version(),
+			GitHash:   gitCommitHash,
+		})
+	})
 
 	// addresses
 	app.Match([]string{"GET", "POST"}, "/address/new", web.NewAddress)

@@ -200,6 +200,7 @@ func CreateRawTransaction(inputs Inputs, outputs Outputs) (*wire.MsgTx, error) {
 
 		prevOut := wire.NewOutPoint(txHash, uint32(input.VOut))
 		txIn := wire.NewTxIn(prevOut, nil, nil)
+		txIn.Sequence = wire.MaxTxInSequenceNum - 2
 		tx.AddTxIn(txIn)
 	}
 
