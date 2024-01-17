@@ -22,14 +22,14 @@ type createAndSignTransactionReq struct {
 	PayToAddresses []payToAddress `json:"pay_to_addresses"`
 }
 type txin struct {
-	TxId         string  `json:"txid"`
-	VOut         *int    `json:"vout,omitempty,-"`
-	WIF          string  `json:"wif,omitempty,-"`
-	RedeemScript string  `json:"redeem-script,omitempty,-"`
-	SegWit       bool    `json:"segwit,omitempty,-"`
-	Amount       float64 `json:"amount,omitempty,-"`
+	TxId         string `json:"txid"`
+	VOut         *int   `json:"vout,omitempty,-"`
+	WIF          string `json:"wif,omitempty,-"`
+	RedeemScript string `json:"redeem-script,omitempty,-"`
+	SegWit       bool   `json:"segwit,omitempty,-"`
+	Amount       int64  `json:"amount,omitempty,-"`
 }
 type payToAddress struct {
-	Address string  `json:"address"`
-	Amount  float64 `json:"amount"`
+	Address string `json:"address"`
+	Amount  int64  `json:"amount"`
 }

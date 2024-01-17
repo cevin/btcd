@@ -236,7 +236,7 @@ POST /transaction/create
     "pay_to_addresses": [
         {
             "address": "any bitcoin address",
-            "amount": float
+            "amount": int (satoshi)
         }
     ]
 }
@@ -269,7 +269,7 @@ POST /transaction/sign
             "wif": "WIF private key",
             "redeem-script": "multisig redeem script",
             "segwit": bool,
-            "amount": float64 (optional, when segwit transaction required)
+            "amount": int (satoshi) (optional, when segwit transaction required)
         }
     ]
 }
@@ -297,13 +297,13 @@ Response
             "wif": "WIF private key",
             "redeem-script": "multisig redeem script",
             "segwit": bool,
-            "amount": float64 (optional, when segwit transaction required)
+            "amount": int (satoshi) (optional, when segwit transaction required)
         }
     ],
     "pay_to_addresses": [
         {
             "address": "any Bitcoin address",
-            "amount": float
+            "amount": int (satoshi)
         }
     ]
 }

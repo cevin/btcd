@@ -226,7 +226,7 @@ tx=0100000001fe75a438b72fdc302b80cc216d66d5e3bbb0359bce3bb4cecf743f5fda1f4eb1010
 > 
 > 如：地址A有1BTC，想发送0.1给地址B，想要支付0.0000001BTC作为交易手续费，则pay_to_addresses可能为:
 > 
-> [{"address":地址B, "amount":0.1}, {"address":地址A, "amount":0.8999999]
+> [{"address":地址B, "amount":10000000}, {"address":地址A, "amount":99999990]
 
 ```text
 POST /transaction/create
@@ -242,7 +242,7 @@ POST /transaction/create
     "pay_to_addresses": [
         {
             "address": "任意正确的比特币地址",
-            "amount": float，最大支持精确到小数点后8位
+            "amount": int satoshi，比特币最小单位
         }
     ]
 }
@@ -275,7 +275,7 @@ POST /transaction/sign
             "wif": "WIF格式的私钥",
             "redeem-script": "多重签名地址的兑付脚本（redeem script）16进制编码",
             "segwit": bool 是否来自bech32格式的地址的交易
-            "amount": float64 (可选 segwit 时必须)
+            "amount": int satoshi，比特币最小单位 (可选 segwit 时必须)
         }
     ]
 }
@@ -303,13 +303,13 @@ POST /transaction/sign
             "wif": "WIF格式的私钥",
             "redeem-script": "多重签名地址的兑付脚本（redeem script）16进制编码",
             "segwit": bool 是否来自bech32格式的地址的交易,
-            "amount": float64 (可选 segwit 时必须)
+            "amount": int satoshi，比特币最小单位 (可选 segwit 时必须)
         }
     ],
     "pay_to_addresses": [
         {
             "address": "任意正确的比特币地址",
-            "amount": float，最大支持精确到小数点后8位
+            "amount": int satoshi，比特币最小单位，最大支持精确到小数点后8位
         }
     ]
 }

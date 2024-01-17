@@ -45,12 +45,12 @@ type Input struct {
 	WIF          string
 	RedeemScript string
 	SegWit       bool
-	Amount       float64
+	Amount       int64
 }
 
 type Output struct {
 	PayToAddress string
-	Amount       float64
+	Amount       int64
 }
 
 type Inputs []Input

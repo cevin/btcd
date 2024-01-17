@@ -205,11 +205,7 @@ func CreateRawTransaction(inputs Inputs, outputs Outputs) (*wire.MsgTx, error) {
 	}
 
 	for _, output := range outputs {
-
-		sendAmount, err := btcutil.NewAmount(output.Amount)
-		if err != nil {
-			return nil, err
-		}
+		sendAmount := output.Amount
 		address, err := btcutil.DecodeAddress(output.PayToAddress, mnet)
 		if err != nil {
 			return nil, err
@@ -339,10 +335,7 @@ func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
 			return "", fmt.Errorf("calc pkScript failed for %s", txId)
 		}
 
-		amount, err := btcutil.NewAmount(signUseInput.input.Amount)
-		if err != nil {
-			return "", fmt.Errorf(errTmpl, idx, "invalid amount, "+err.Error())
-		}
+		amount := signUseInput.input.Amount
 
 		signUseInputsMap[txId] = signUseInput
 		prevOutFetcher.AddPrevOut(
