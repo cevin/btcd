@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	version       string
-	gitCommitHash string
+	version       = "main"
+	gitCommitHash = ""
 )
 
 func main() {
