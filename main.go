@@ -3,6 +3,7 @@ package main
 import (
 	"btc/web"
 	"flag"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"runtime"
@@ -10,13 +11,25 @@ import (
 
 var (
 	version       = "main"
-	gitCommitHash = ""
+	gitCommitHash = "latest"
 )
 
 func main() {
 	var addr string
+	var v bool
 	flag.StringVar(&addr, "addr", "localhost:8000", "")
+	flag.BoolVar(&v, "version", false, "Display version info")
 	flag.Parse()
+
+	if v {
+		fmt.Printf(
+			"Version: %s \n"+
+				"Git Commit Hash: %s \n",
+			version,
+			gitCommitHash,
+		)
+		return
+	}
 
 	app := echo.New()
 	app.Use(middleware.Recover())
