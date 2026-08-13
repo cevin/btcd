@@ -1,20 +1,19 @@
 package btc
 
 import (
+	"btc/config"
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"sort"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/mempool"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"sort"
 )
-
-var mnet = &chaincfg.MainNetParams
 
 // NewPrivateKey generate a Bitcoin wallet private key
 func NewPrivateKey() *btcec.PrivateKey {
@@ -26,7 +25,7 @@ func NewPrivateKey() *btcec.PrivateKey {
 // NewAddress generate a normal wallet
 func NewAddress() Address {
 	privateKey := NewPrivateKey()
-	wif, _ := btcutil.NewWIF(privateKey, mnet, true)
+	wif, _ := btcutil.NewWIF(privateKey, config.NET, true)
 
 	addr, _ := ParseWIF(wif.String())
 
@@ -41,16 +40,16 @@ func ParseWIF(key string) (*Address, error) {
 	}
 
 	compressedPubKey := wif.PrivKey.PubKey().SerializeCompressed()
-	addressPubKey, err := btcutil.NewAddressPubKey(compressedPubKey, mnet)
+	addressPubKey, err := btcutil.NewAddressPubKey(compressedPubKey, config.NET)
 	if err != nil {
 		return nil, err
 	}
 
 	// get p2pkhPkScript
-	addressPubKeyHash, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(compressedPubKey), mnet)
+	addressPubKeyHash, _ := btcutil.NewAddressPubKeyHash(btcutil.Hash160(compressedPubKey), config.NET)
 	p2pkhPkScript, _ := txscript.PayToAddrScript(addressPubKeyHash)
 	// get witnessPkScript
-	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(compressedPubKey), mnet)
+	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(btcutil.Hash160(compressedPubKey), config.NET)
 	witnessPkScript, _ := txscript.PayToAddrScript(addressWitnessPubKeyHash)
 
 	return &Address{
@@ -73,7 +72,7 @@ func ParsePublicKeyHex(key string) (*Address, error) {
 		return nil, err
 	}
 
-	addressPubKey, err := btcutil.NewAddressPubKey(decodeString, mnet)
+	addressPubKey, err := btcutil.NewAddressPubKey(decodeString, config.NET)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +83,7 @@ func ParsePublicKeyHex(key string) (*Address, error) {
 	}
 
 	witnessProg := btcutil.Hash160(pubKey.SerializeCompressed())
-	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(witnessProg, mnet)
+	addressWitnessPubKeyHash, _ := btcutil.NewAddressWitnessPubKeyHash(witnessProg, config.NET)
 
 	return &Address{
 		Address:       addressPubKey.EncodeAddress(),
@@ -114,7 +113,7 @@ func NewMultiSigAddress(pubKeys []string, required int) (*MultiSigAddress, error
 		return nil, err
 	}
 
-	addressHash, err := btcutil.NewAddressScriptHashFromHash(btcutil.Hash160(script), mnet)
+	addressHash, err := btcutil.NewAddressScriptHashFromHash(btcutil.Hash160(script), config.NET)
 	if err != nil {
 		return nil, err
 	}
@@ -137,13 +136,13 @@ func ParseMultiSigAddress(script string) (*MultiSigAddress, error) {
 		return nil, err
 	}
 
-	addressHash, err := btcutil.NewAddressScriptHashFromHash(btcutil.Hash160(b), mnet)
+	addressHash, err := btcutil.NewAddressScriptHashFromHash(btcutil.Hash160(b), config.NET)
 	if err != nil {
 		return nil, err
 	}
 
 	disBuff, _ := txscript.DisasmString(b)
-	scriptClass, addrs, reqSigs, err := txscript.ExtractPkScriptAddrs(b, mnet)
+	scriptClass, addrs, reqSigs, err := txscript.ExtractPkScriptAddrs(b, config.NET)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +205,7 @@ func CreateRawTransaction(inputs Inputs, outputs Outputs) (*wire.MsgTx, error) {
 
 	for _, output := range outputs {
 		sendAmount := output.Amount
-		address, err := btcutil.DecodeAddress(output.PayToAddress, mnet)
+		address, err := btcutil.DecodeAddress(output.PayToAddress, config.NET)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +319,7 @@ func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
 				if !isMultiSignRedeemScript {
 					return "", fmt.Errorf(errTmpl, idx, "invalid MultiSign redeem-script")
 				}
-				multiSignAddressPubKeyHash, err := btcutil.NewAddressScriptHash(decodeString, mnet)
+				multiSignAddressPubKeyHash, err := btcutil.NewAddressScriptHash(decodeString, config.NET)
 				if err != nil {
 					return "", fmt.Errorf(errTmpl, idx, err)
 				}
@@ -373,12 +372,12 @@ func SignRawTxTransaction(tx *wire.MsgTx, inputs Inputs) (string, error) {
 			}
 
 			signScript, err := txscript.SignTxOutput(
-				mnet,
+				config.NET,
 				tx,
 				idx,
 				pkScript,
 				txscript.SigHashAll,
-				newLookupKeyFunc(signUseInput.addr.PrivateKey, mnet),
+				newLookupKeyFunc(signUseInput.addr.PrivateKey, config.NET),
 				newScriptDbFunc(redeemScript),
 				tx.TxIn[idx].SignatureScript,
 			)

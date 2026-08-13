@@ -1,12 +1,16 @@
 package main
 
 import (
+	"btc/config"
 	"btc/web"
 	"flag"
 	"fmt"
+	"log"
+	"runtime"
+
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"runtime"
 )
 
 var (
@@ -17,7 +21,9 @@ var (
 func main() {
 	var addr string
 	var v bool
+	var tNet string
 	flag.StringVar(&addr, "addr", "localhost:8000", "")
+	flag.StringVar(&tNet, "net", "mainnet", "")
 	flag.BoolVar(&v, "version", false, "Display version info")
 	flag.Parse()
 
@@ -29,6 +35,15 @@ func main() {
 			gitCommitHash,
 		)
 		return
+	}
+
+	switch tNet {
+	case "mainnet":
+		config.NET = &chaincfg.MainNetParams
+	case "testnet":
+		config.NET = &chaincfg.TestNet3Params
+	default:
+		log.Fatal("Unknown network type: ", tNet)
 	}
 
 	app := echo.New()

@@ -4,7 +4,7 @@ type parseAddressReq struct {
 	PublicKeyHex  string `json:"public_key_hex" form:"public_key_hex" query:"public_key_hex"`
 	PrivateKeyHex string `json:"private_key_hex" form:"private_key_hex" query:"private_key_hex"`
 	WIF           string `json:"wif" form:"wif" query:"wif"`
-	Script        string `json:"script" from:"script" query:"script"`
+	Script        string `json:"script" form:"script" query:"script"`
 }
 
 type createMultiSigReq struct {
